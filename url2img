@@ -1,0 +1,32 @@
+#!/usr/bin/perl -w
+# Download all images from provided url.
+
+use strict;
+use threads;
+use LWP::Simple;
+use HTML::TokeParser;
+use LWP::Simple qw(getstore);
+use Getopt::Long;
+
+if (@ARGV != 1) {
+    printf "\nUsage: url2img <url>\n";
+    exit;
+}
+
+my $html   = get("$ARGV[0]");
+my $stream = HTML::TokeParser->new(\$html);
+my %image  = ();
+my $foo = 0;
+
+while (my $token = $stream->get_token) {
+    if ($token->[0] eq 'S' && $token->[1] eq 'img') {
+        $image{ $token->[2]{'src'} }++;
+    }
+}
+
+foreach my $picurl (sort keys %image) {
+    (my $filename = $picurl) =~ m/.*\/(.*)$/;
+    printf "[$foo] Downloading $picurl\n";
+    getstore($picurl,"image-$foo.png") or die "Error while downloading.";
+    $foo++;
+}
