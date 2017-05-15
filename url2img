@@ -1,5 +1,6 @@
 #!/usr/bin/perl -w
 # Download all images from provided url.
+# iomonad - <iomonad@riseup.net>
 
 use strict;
 use threads;
@@ -8,7 +9,8 @@ use HTML::TokeParser;
 use LWP::Simple qw(getstore);
 use Getopt::Long;
 
-if (@ARGV != 1) {
+if (@ARGV != 1)
+{
     printf "\nUsage: url2img <url>\n";
     exit;
 }
@@ -16,17 +18,25 @@ if (@ARGV != 1) {
 my $html   = get("$ARGV[0]");
 my $stream = HTML::TokeParser->new(\$html);
 my %image  = ();
-my $foo = 0;
+my $count = 0;
+my @jobs;
 
-while (my $token = $stream->get_token) {
-    if ($token->[0] eq 'S' && $token->[1] eq 'img') {
+while (my $token = $stream->get_token)
+{
+    if ($token->[0] eq 'S' && $token->[1] eq 'img')
+    {
         $image{ $token->[2]{'src'} }++;
     }
 }
 
-foreach my $picurl (sort keys %image) {
-    (my $filename = $picurl) =~ m/.*\/(.*)$/;
-    printf "[$foo] Downloading $picurl\n";
-    getstore($picurl,"image-$foo.png") or die "Error while downloading.";
-    $foo++;
+foreach my $picurl (sort keys %image)
+{
+    push @jobs, threads->create(sub {
+        (my $filename = $picurl) =~ s/.*\/([^\/]*)$/$1/;
+        printf "[$count] Downloading $picurl as $filename.\n";
+        getstore($picurl,"$filename") or die "Error while downloading.";
+        $count++;
+    });
 }
+
+$_->join for @jobs;
