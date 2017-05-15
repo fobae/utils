@@ -1,0 +1,20 @@
+#!/usr/bin/perl -w
+# Get weather of my town
+# iomonad - iomonad@riseup.net
+
+use strict;
+use warnings;
+use XML::Simple;
+use LWP::Simple;
+use Data::Dumper;
+$|=1; # Disable buffering
+
+
+my $url = "https://yr.no/place/Netherlands/South_Holland/Delft/forecast.xml";
+
+
+my $parser = new XML::Simple;
+my $data = get($url);
+my $k = Dumper($parser->XMLin("$data"));
+
+print $k
